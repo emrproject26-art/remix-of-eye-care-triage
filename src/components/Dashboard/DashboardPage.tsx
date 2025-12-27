@@ -4,15 +4,42 @@ import { StatsPanel } from './StatsPanel';
 import { PatientQueue } from './PatientQueue';
 import { ImageViewer } from './ImageViewer';
 import { ReviewPanel } from './ReviewPanel';
+import { TechnicianUploadPanel } from './TechnicianUploadPanel';
 import { usePatients } from '@/contexts/PatientContext';
 import { PatientProvider } from '@/contexts/PatientContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { Upload, Eye, Shield } from 'lucide-react';
 
 function DashboardContent() {
   const { selectedPatient } = usePatients();
+  const { user } = useAuth();
+
+  const isOphthalmologist = user?.role === 'ophthalmologist';
+  const isTechnician = user?.role === 'technician';
+  const isAdmin = user?.role === 'admin';
+
+  // Technicians see upload panel instead of review panel
+  const canReview = isOphthalmologist || isAdmin;
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      
+      {/* Role indicator banner */}
+      <div className={`px-4 py-2 text-sm flex items-center justify-center gap-2 ${
+        isOphthalmologist ? 'bg-primary/10 text-primary' :
+        isTechnician ? 'bg-accent/10 text-accent-foreground' :
+        'bg-warning/10 text-warning'
+      }`}>
+        {isOphthalmologist && <Eye className="w-4 h-4" />}
+        {isTechnician && <Upload className="w-4 h-4" />}
+        {isAdmin && <Shield className="w-4 h-4" />}
+        <span className="font-medium">
+          {isOphthalmologist && 'Ophthalmologist View — Review and diagnose patients'}
+          {isTechnician && 'Technician View — Upload images and manage patient queue'}
+          {isAdmin && 'Admin View — Full access to all features'}
+        </span>
+      </div>
       
       <main className="p-4 lg:p-6 space-y-6">
         {/* Stats */}
@@ -80,20 +107,26 @@ function DashboardContent() {
             )}
           </div>
 
-          {/* Review Panel */}
+          {/* Right Panel - Role dependent */}
           <div className="lg:col-span-3">
-            <ReviewPanel />
+            {canReview ? (
+              <ReviewPanel />
+            ) : (
+              <TechnicianUploadPanel />
+            )}
           </div>
         </div>
       </main>
 
-      {/* Keyboard Shortcuts Hint */}
-      <div className="fixed bottom-4 left-4 hidden lg:flex items-center gap-4 text-xs text-muted-foreground bg-card/90 backdrop-blur border border-border rounded-lg px-4 py-2">
-        <span><kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">N</kbd> Next</span>
-        <span><kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">R</kbd> Normal</span>
-        <span><kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">A</kbd> Abnormal</span>
-        <span><kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">F</kbd> Fullscreen</span>
-      </div>
+      {/* Keyboard Shortcuts Hint - Only for reviewers */}
+      {canReview && (
+        <div className="fixed bottom-4 left-4 hidden lg:flex items-center gap-4 text-xs text-muted-foreground bg-card/90 backdrop-blur border border-border rounded-lg px-4 py-2">
+          <span><kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">N</kbd> Next</span>
+          <span><kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">R</kbd> Normal</span>
+          <span><kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">A</kbd> Abnormal</span>
+          <span><kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">F</kbd> Fullscreen</span>
+        </div>
+      )}
     </div>
   );
 }
