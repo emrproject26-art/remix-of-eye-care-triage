@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Patient, ReviewDecision, DashboardStats } from '@/types';
-import { mockPatients, mockStats } from '@/data/mockData';
+import { mockPatients } from '@/data/mockData';
+
+interface AddPatientData {
+  name: string;
+  uid: string;
+  age: number;
+  gender: 'Male' | 'Female' | 'Other';
+  phone: string;
+  leftEyeImage?: string;
+  rightEyeImage?: string;
+}
 
 interface PatientContextType {
   patients: Patient[];
@@ -8,6 +18,7 @@ interface PatientContextType {
   stats: DashboardStats;
   selectPatient: (patient: Patient | null) => void;
   submitReview: (patientId: string, decision: ReviewDecision, findings: string) => void;
+  addPatient: (data: AddPatientData) => void;
   getPendingPatients: () => Patient[];
   getReviewedPatients: () => Patient[];
   getUrgentPatients: () => Patient[];
@@ -38,6 +49,38 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
       return p;
     }));
     setSelectedPatient(null);
+  }, []);
+
+  const addPatient = useCallback((data: AddPatientData) => {
+    const now = new Date();
+    const newPatient: Patient = {
+      id: `patient-${Date.now()}`,
+      uid: data.uid,
+      name: data.name,
+      age: data.age,
+      gender: data.gender,
+      phone: data.phone,
+      department: 'General OPD',
+      visitDate: now.toISOString(),
+      status: 'pending',
+      images: {
+        left: {
+          url: data.leftEyeImage || 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&h=600&fit=crop',
+          format: 'JPEG',
+          resolution: '2048x1536',
+          eye: 'left',
+        },
+        right: {
+          url: data.rightEyeImage || 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&h=600&fit=crop',
+          format: 'JPEG',
+          resolution: '2048x1536',
+          eye: 'right',
+        },
+      },
+      createdAt: now.toISOString(),
+    };
+    
+    setPatients(prev => [newPatient, ...prev]);
   }, []);
 
   const getPendingPatients = useCallback(() => {
@@ -77,6 +120,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
       stats,
       selectPatient,
       submitReview,
+      addPatient,
       getPendingPatients,
       getReviewedPatients,
       getUrgentPatients,
