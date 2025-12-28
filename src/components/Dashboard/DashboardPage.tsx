@@ -7,6 +7,7 @@ import { ReviewPanel } from './ReviewPanel';
 import { TechnicianUploadPanel } from './TechnicianUploadPanel';
 import { usePatients } from '@/contexts/PatientContext';
 import { PatientProvider } from '@/contexts/PatientContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Upload, Eye, Shield } from 'lucide-react';
 
@@ -58,12 +59,12 @@ function DashboardContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <ImageViewer
                   imageUrl={selectedPatient.images.left.url}
-                  eye="left"
+                  eye="OS"
                   patientName={selectedPatient.name}
                 />
                 <ImageViewer
                   imageUrl={selectedPatient.images.right.url}
-                  eye="right"
+                  eye="OD"
                   patientName={selectedPatient.name}
                 />
               </div>
@@ -77,7 +78,7 @@ function DashboardContent() {
                 </div>
                 <h3 className="text-lg font-medium text-foreground mb-2">Fundus Image Viewer</h3>
                 <p className="text-sm text-muted-foreground max-w-sm">
-                  Select a patient from the queue to view their left and right eye fundus photographs
+                  Select a patient from the queue to view their OS (Left Eye) and OD (Right Eye) fundus photographs
                 </p>
               </div>
             )}
@@ -133,8 +134,10 @@ function DashboardContent() {
 
 export function DashboardPage() {
   return (
-    <PatientProvider>
-      <DashboardContent />
-    </PatientProvider>
+    <NotificationProvider>
+      <PatientProvider>
+        <DashboardContent />
+      </PatientProvider>
+    </NotificationProvider>
   );
 }

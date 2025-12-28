@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Clock, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
+import { Users, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
 import { usePatients } from '@/contexts/PatientContext';
 
 interface StatCardProps {
@@ -50,7 +50,7 @@ export function StatsPanel() {
   const { stats } = usePatients();
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
         icon={<Clock className="w-5 h-5" />}
         label="Pending Review"
@@ -77,12 +77,6 @@ export function StatsPanel() {
         label="Total Patients"
         value={stats.total}
         subtext="Today's queue"
-      />
-      <StatCard
-        icon={<TrendingUp className="w-5 h-5" />}
-        label="Avg. Review Time"
-        value={`${stats.avgReviewTime}m`}
-        subtext="Per patient"
       />
     </div>
   );

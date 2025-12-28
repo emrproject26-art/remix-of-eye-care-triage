@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { User } from '@/types';
+import { User, UserRole } from '@/types';
 import { mockUsers } from '@/data/mockData';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (username: string, password: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   sessionTimeout: number;
 }
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(checkTimeout);
   }, [user, lastActivity]);
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string, role: UserRole) => {
     setIsLoading(true);
     
     // Simulate API delay
@@ -86,6 +86,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (mockUser.password !== password) {
       setIsLoading(false);
       return { success: false, error: 'Invalid password' };
+    }
+
+    // Verify the user's role matches the selected role
+    if (mockUser.role !== role) {
+      setIsLoading(false);
+      return { success: false, error: `This account is not registered as ${role}. Please select the correct role.` };
     }
 
     const { password: _, ...userWithoutPassword } = mockUser;
