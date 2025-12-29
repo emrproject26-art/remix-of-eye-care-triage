@@ -14,7 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      patients: {
+        Row: {
+          age: number
+          ai_score: number | null
+          condition: string | null
+          created_at: string
+          decision: string | null
+          department: string
+          findings: string | null
+          gender: string
+          id: string
+          left_eye_image_url: string | null
+          name: string
+          phone: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          right_eye_image_url: string | null
+          status: string
+          uid: string
+          updated_at: string
+          visit_date: string
+        }
+        Insert: {
+          age: number
+          ai_score?: number | null
+          condition?: string | null
+          created_at?: string
+          decision?: string | null
+          department?: string
+          findings?: string | null
+          gender: string
+          id?: string
+          left_eye_image_url?: string | null
+          name: string
+          phone: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          right_eye_image_url?: string | null
+          status?: string
+          uid: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Update: {
+          age?: number
+          ai_score?: number | null
+          condition?: string | null
+          created_at?: string
+          decision?: string | null
+          department?: string
+          findings?: string | null
+          gender?: string
+          id?: string
+          left_eye_image_url?: string | null
+          name?: string
+          phone?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          right_eye_image_url?: string | null
+          status?: string
+          uid?: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

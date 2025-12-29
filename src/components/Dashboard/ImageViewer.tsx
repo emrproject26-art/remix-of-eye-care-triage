@@ -1,8 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { ZoomIn, ZoomOut, RotateCw, Maximize2, Move, Crosshair, Sun, Contrast, X } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCw, Maximize2, Move, Crosshair, Sun, Contrast, X, ImageOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +39,7 @@ export function ImageViewer({ imageUrl, eye, patientName }: ImageViewerProps) {
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [imageError, setImageError] = useState(false);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 400));
@@ -75,10 +78,17 @@ export function ImageViewer({ imageUrl, eye, patientName }: ImageViewerProps) {
     setZoom(prev => Math.min(Math.max(prev + delta, 25), 400));
   }, []);
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
   const imageStyle = {
     transform: `scale(${zoom / 100}) rotate(${rotation}deg) translate(${panPosition.x / (zoom / 100)}px, ${panPosition.y / (zoom / 100)}px)`,
     filter: `brightness(${brightness}%) contrast(${contrast}%)`,
   };
+
+  // Check if we have a valid image URL
+  const hasValidImage = imageUrl && imageUrl.trim() !== '' && !imageError;
 
   const ImageContent = ({ inDialog = false }: { inDialog?: boolean }) => (
     <div className={cn("flex flex-col h-full bg-card rounded-xl border border-border overflow-hidden", inDialog && "border-0")}>
@@ -90,34 +100,38 @@ export function ImageViewer({ imageUrl, eye, patientName }: ImageViewerProps) {
           <span className="text-xs text-muted-foreground">• {patientName}</span>
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setIsPanning(!isPanning)}
-            title="Pan Mode"
-          >
-            <Move className={cn("w-4 h-4", isPanning && "text-accent")} />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8"
-            onClick={handleReset}
-            title="Reset View"
-          >
-            <Crosshair className="w-4 h-4" />
-          </Button>
-          {!inDialog && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8"
-              onClick={() => setIsFullscreen(true)}
-              title="Fullscreen"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </Button>
+          {hasValidImage && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setIsPanning(!isPanning)}
+                title="Pan Mode"
+              >
+                <Move className={cn("w-4 h-4", isPanning && "text-accent")} />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={handleReset}
+                title="Reset View"
+              >
+                <Crosshair className="w-4 h-4" />
+              </Button>
+              {!inDialog && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => setIsFullscreen(true)}
+                  title="Fullscreen"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </Button>
+              )}
+            </>
           )}
           {inDialog && (
             <Button 
@@ -145,76 +159,91 @@ export function ImageViewer({ imageUrl, eye, patientName }: ImageViewerProps) {
         style={{ cursor: isPanning ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
       >
         <div className="absolute inset-0 flex items-center justify-center p-4">
-          <img
-            src={imageUrl}
-            alt={`${eyeLabels[eye]} fundus`}
-            className="max-w-full max-h-full object-contain rounded-lg shadow-lg transition-transform duration-100"
-            style={imageStyle}
-            draggable={false}
-          />
+          {hasValidImage ? (
+            <Zoom>
+              <img
+                src={imageUrl}
+                alt={`${eyeLabels[eye]} fundus`}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-lg transition-transform duration-100"
+                style={imageStyle}
+                draggable={false}
+                onError={handleImageError}
+              />
+            </Zoom>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-muted-foreground">
+              <ImageOff className="w-16 h-16 mb-4 opacity-50" />
+              <p className="text-sm font-medium">No image available</p>
+              <p className="text-xs mt-1">Image was not uploaded for this eye</p>
+            </div>
+          )}
         </div>
 
         {/* Zoom indicator */}
-        <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur px-2 py-1 rounded-md text-xs font-medium mono-text">
-          {zoom}%
-        </div>
+        {hasValidImage && (
+          <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur px-2 py-1 rounded-md text-xs font-medium mono-text">
+            {zoom}%
+          </div>
+        )}
       </div>
 
-      {/* Controls */}
-      <div className="p-3 border-t border-border space-y-3">
-        {/* Zoom controls */}
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomOut}>
-            <ZoomOut className="w-4 h-4" />
-          </Button>
-          <Slider
-            value={[zoom]}
-            min={25}
-            max={400}
-            step={25}
-            onValueChange={(v) => setZoom(v[0])}
-            className="flex-1"
-          />
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomIn}>
-            <ZoomIn className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleRotate}>
-            <RotateCw className="w-4 h-4" />
+      {/* Controls - only show if image is available */}
+      {hasValidImage && (
+        <div className="p-3 border-t border-border space-y-3">
+          {/* Zoom controls */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomOut}>
+              <ZoomOut className="w-4 h-4" />
+            </Button>
+            <Slider
+              value={[zoom]}
+              min={25}
+              max={400}
+              step={25}
+              onValueChange={(v) => setZoom(v[0])}
+              className="flex-1"
+            />
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomIn}>
+              <ZoomIn className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleRotate}>
+              <RotateCw className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Brightness & Contrast */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Sun className="w-3.5 h-3.5" />
+                <span>Brightness: {brightness}%</span>
+              </div>
+              <Slider
+                value={[brightness]}
+                min={50}
+                max={150}
+                onValueChange={(v) => setBrightness(v[0])}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Contrast className="w-3.5 h-3.5" />
+                <span>Contrast: {contrast}%</span>
+              </div>
+              <Slider
+                value={[contrast]}
+                min={50}
+                max={150}
+                onValueChange={(v) => setContrast(v[0])}
+              />
+            </div>
+          </div>
+
+          <Button variant="ghost" size="sm" onClick={handleReset} className="w-full text-xs">
+            Reset View
           </Button>
         </div>
-
-        {/* Brightness & Contrast */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Sun className="w-3.5 h-3.5" />
-              <span>Brightness: {brightness}%</span>
-            </div>
-            <Slider
-              value={[brightness]}
-              min={50}
-              max={150}
-              onValueChange={(v) => setBrightness(v[0])}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Contrast className="w-3.5 h-3.5" />
-              <span>Contrast: {contrast}%</span>
-            </div>
-            <Slider
-              value={[contrast]}
-              min={50}
-              max={150}
-              onValueChange={(v) => setContrast(v[0])}
-            />
-          </div>
-        </div>
-
-        <Button variant="ghost" size="sm" onClick={handleReset} className="w-full text-xs">
-          Reset View
-        </Button>
-      </div>
+      )}
     </div>
   );
 

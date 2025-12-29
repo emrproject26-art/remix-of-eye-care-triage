@@ -22,6 +22,8 @@ export function TechnicianUploadPanel() {
   const [phone, setPhone] = useState('');
   const [leftEyeImage, setLeftEyeImage] = useState<File | null>(null);
   const [rightEyeImage, setRightEyeImage] = useState<File | null>(null);
+  const [leftEyePreview, setLeftEyePreview] = useState<string | null>(null);
+  const [rightEyePreview, setRightEyePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const leftEyeInputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +39,6 @@ export function TechnicianUploadPanel() {
     if (!validTypes.includes(file.type)) {
       return { valid: false, error: 'Only JPEG and PNG formats are accepted' };
     }
-    // Note: True fundus image validation would require AI/ML - this is a placeholder
     return { valid: true };
   };
 
@@ -52,20 +53,29 @@ export function TechnicianUploadPanel() {
       return;
     }
 
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+
     if (eye === 'left') {
       setLeftEyeImage(file);
+      setLeftEyePreview(previewUrl);
     } else {
       setRightEyeImage(file);
+      setRightEyePreview(previewUrl);
     }
     toast.success(`${eye === 'left' ? 'OS (Left Eye)' : 'OD (Right Eye)'} image uploaded`);
   };
 
   const removeImage = (eye: 'left' | 'right') => {
     if (eye === 'left') {
+      if (leftEyePreview) URL.revokeObjectURL(leftEyePreview);
       setLeftEyeImage(null);
+      setLeftEyePreview(null);
       if (leftEyeInputRef.current) leftEyeInputRef.current.value = '';
     } else {
+      if (rightEyePreview) URL.revokeObjectURL(rightEyePreview);
       setRightEyeImage(null);
+      setRightEyePreview(null);
       if (rightEyeInputRef.current) rightEyeInputRef.current.value = '';
     }
   };
@@ -110,45 +120,49 @@ export function TechnicianUploadPanel() {
     }
 
     setIsUploading(true);
-    // Simulate upload
-    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Add patient to queue
-    addPatient({
-      name: patientName,
-      uid: patientUid,
-      age: parseInt(age),
-      gender: gender as 'Male' | 'Female' | 'Other',
-      phone: `+91-${phone}`,
-      leftEyeImage: leftEyeImage ? URL.createObjectURL(leftEyeImage) : undefined,
-      rightEyeImage: rightEyeImage ? URL.createObjectURL(rightEyeImage) : undefined,
-    });
+    try {
+      // Add patient with file objects (they'll be uploaded in the context)
+      await addPatient({
+        name: patientName,
+        uid: patientUid,
+        age: parseInt(age),
+        gender: gender as 'Male' | 'Female' | 'Other',
+        phone: `+91-${phone}`,
+        leftEyeImage: leftEyeImage || undefined,
+        rightEyeImage: rightEyeImage || undefined,
+      });
 
-    // Add notification
-    addNotification(
-      patientName,
-      'Patient added successfully',
-      'success'
-    );
-    
-    setIsUploading(false);
-    setUploadSuccess(true);
-    toast.success('Patient added successfully', {
-      description: `${patientName} has been added to the review queue`
-    });
+      // Add notification
+      addNotification(
+        patientName,
+        'Patient added successfully',
+        'success'
+      );
+      
+      setUploadSuccess(true);
 
-    // Reset form
-    setTimeout(() => {
-      setUploadSuccess(false);
-      setPatientName('');
-      setPatientUid('');
-      setAge('');
-      setGender('');
-      setPhone('');
-      setLeftEyeImage(null);
-      setRightEyeImage(null);
-      setErrors({});
-    }, 2000);
+      // Reset form
+      setTimeout(() => {
+        setUploadSuccess(false);
+        setPatientName('');
+        setPatientUid('');
+        setAge('');
+        setGender('');
+        setPhone('');
+        if (leftEyePreview) URL.revokeObjectURL(leftEyePreview);
+        if (rightEyePreview) URL.revokeObjectURL(rightEyePreview);
+        setLeftEyeImage(null);
+        setRightEyeImage(null);
+        setLeftEyePreview(null);
+        setRightEyePreview(null);
+        setErrors({});
+      }, 2000);
+    } catch (error) {
+      console.error('Error adding patient:', error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -267,10 +281,10 @@ export function TechnicianUploadPanel() {
                   className="hidden"
                   id="left-eye-upload"
                 />
-                {leftEyeImage ? (
+                {leftEyePreview ? (
                   <div className="relative border-2 border-success rounded-lg p-2">
                     <img 
-                      src={URL.createObjectURL(leftEyeImage)} 
+                      src={leftEyePreview} 
                       alt="OS preview" 
                       className="w-full h-16 object-cover rounded"
                     />
@@ -303,10 +317,10 @@ export function TechnicianUploadPanel() {
                   className="hidden"
                   id="right-eye-upload"
                 />
-                {rightEyeImage ? (
+                {rightEyePreview ? (
                   <div className="relative border-2 border-success rounded-lg p-2">
                     <img 
-                      src={URL.createObjectURL(rightEyeImage)} 
+                      src={rightEyePreview} 
                       alt="OD preview" 
                       className="w-full h-16 object-cover rounded"
                     />
